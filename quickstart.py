@@ -1,7 +1,8 @@
 
 from __future__ import print_function
 import httplib2
-import os
+import os, io
+from apiclient.http import MediaIoBaseDownload
 
 from apiclient import discovery
 from oauth2client import client
@@ -16,7 +17,8 @@ except ImportError:
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/drive-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly'
+#SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly'
+SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Drive API Python Quickstart'
 
@@ -49,6 +51,17 @@ def get_credentials():
         print('Storing credentials to ' + credential_path)
     return credentials
 
+def prntRes(res):
+    print(res)
+    items = res.get('files', [])
+    if not items:
+        print('No files found.')
+    else:
+        print('Files:')
+        for item in items:
+            print(item)
+            #print('{0} ({1})'.format(item['name'], item['id']))
+
 def main():
     """Shows basic usage of the Google Drive API.
 
@@ -68,6 +81,20 @@ def main():
         print('Files:')
         for item in items:
             print('{0} ({1})'.format(item['name'], item['id']))
+
+    prntRes(service.files().list(q = "'root' in parents", orderBy = 'name').execute())
+    prntRes(service.files().list(q = "'0Bw0qVz4FT_IQYnFnYkhiRG9uVDA' in parents", orderBy = 'name').execute())
+    #0Bw0qVz4FT_IQd1p5VnJjZGxXZVU
+    file_id = '0Bw0qVz4FT_IQd1p5VnJjZGxXZVU'
+    request = service.files().get_media(fileId = file_id)
+    fh = io.FileIO('filename~', 'wb')
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    
+    while done is False:
+        status, done = downloader.next_chunk()
+        print("Download %d%%." % int(status.progress() * 100))
+    
 
 if __name__ == '__main__':
     main()
