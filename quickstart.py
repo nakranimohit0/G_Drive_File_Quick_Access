@@ -1,12 +1,10 @@
 
 from __future__ import print_function
-import httplib2
-import os, io
+import httplib2, os, io
 from apiclient.http import MediaIoBaseDownload
 
 from apiclient import discovery
-from oauth2client import client
-from oauth2client import tools
+from oauth2client import client, tools
 from oauth2client.file import Storage
 
 try:
@@ -20,8 +18,8 @@ except ImportError:
 #SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly'
 SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
-APPLICATION_NAME = 'Drive API Python Quickstart'
-
+#APPLICATION_NAME = 'Drive API Python Quickstart'
+APPLICATION_NAME = 'GDrive Quick Access App'
 
 def get_credentials():
     """Gets valid user credentials from storage.
@@ -62,16 +60,7 @@ def prntRes(res):
             print(item)
             #print('{0} ({1})'.format(item['name'], item['id']))
 
-def main():
-    """Shows basic usage of the Google Drive API.
-
-    Creates a Google Drive API service object and outputs the names and IDs
-    for up to 10 files.
-    """
-    credentials = get_credentials()
-    http = credentials.authorize(httplib2.Http())
-    service = discovery.build('drive', 'v3', http = http)
-
+def test(service):
     results = service.files().list(
         pageSize = 10, fields = 'nextPageToken, files(id, name)').execute()
     items = results.get('files', [])
@@ -94,7 +83,61 @@ def main():
     while done is False:
         status, done = downloader.next_chunk()
         print("Download %d%%." % int(status.progress() * 100))
+
+def dl_rqt(rqt, f_io):
+    dler = MediaIoBaseDownload(f_io, rqt)
+    done = False
     
+    while not(done):
+        status, done = dler.next_chunk()
+        print("Download %d%%." % int(status.progress() * 100))
+
+def prep_dir(d):
+    if not os.path.exists(d):
+        os.makedirs(d)
+    
+def dl_f(service, f):
+    tmp_dir_name = '.gdrive_quick_access_tmp'
+    tmp_dir = os.path.join(os.path.expanduser('~'), tmp_dir_name)
+    prep_dir(tmp_dir)
+    
+    rqt = service.files().get_media(fileId = f['id'])
+    f_io = io.FileIO(os.path.join(tmp_dir, f['name']), 'wb')
+    dl_rqt(rqt, f_io)
+    return f_io
+
+def open_f(f_io):
+    os.startfile(f_io.name) # I think, this only works for windows only for now
+    
+    '''try:
+        retcode = subprocess.call("open " + f_io.name, shell=True)
+        if retcode < 0:
+            print >>sys.stderr, "Child was terminated by signal", -retcode
+        else:
+            print >>sys.stderr, "Child returned", retcode
+    except OSError, e:
+        print >>sys.stderr, "Execution failed:", e'''
+    
+def access_f(service, f):
+    f_io = dl_f(service, f)
+    open_f(f_io)
+        
+def main():
+    """Shows basic usage of the Google Drive API.
+
+    Creates a Google Drive API service object and outputs the names and IDs
+    for up to 10 files.
+    """
+    credentials = get_credentials()
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('drive', 'v3', http = http)
+    #test(service)
+
+    f = {
+        'id': '0Bw0qVz4FT_IQd1p5VnJjZGxXZVU',
+        'name': '.dropbox',
+    }
+    access_f(service, f)
 
 if __name__ == '__main__':
     main()
