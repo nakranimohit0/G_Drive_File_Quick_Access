@@ -1,6 +1,7 @@
 
 from __future__ import print_function
-import httplib2, os, io
+import httplib2, os, io, time
+#import win32file, win32con, win32event
 from apiclient.http import MediaIoBaseDownload
 
 from apiclient import discovery
@@ -102,12 +103,11 @@ def dl_f(service, f):
     prep_dir(tmp_dir)
     
     rqt = service.files().get_media(fileId = f['id'])
-    f_io = io.FileIO(os.path.join(tmp_dir, f['name']), 'wb')
-    dl_rqt(rqt, f_io)
-    return f_io
+    f['io'] = io.FileIO(os.path.join(tmp_dir, f['name']), 'wb')
+    dl_rqt(rqt, f['io'])
 
-def open_f(f_io):
-    os.startfile(f_io.name) # I think, this only works for windows only for now
+def open_f(f_loc):
+    os.startfile(f_loc) # I think, this only works for windows only for now
     
     '''try:
         retcode = subprocess.call("open " + f_io.name, shell=True)
@@ -117,10 +117,33 @@ def open_f(f_io):
             print >>sys.stderr, "Child returned", retcode
     except OSError, e:
         print >>sys.stderr, "Execution failed:", e'''
-    
+
+def watch_f(f_loc, handler):
+    print('watch_f()')
+    freq = 0.5
+    last_time = os.stat(f_loc).st_mtime
+    while 1:
+        try:
+            time.sleep(freq)
+            new_time = os.stat(f_loc).st_mtime
+            if (new_time != last_time):
+                last_time = new_time
+                handler()
+        except KeyboardInterrupt:
+            print('bye')
+            break
+
+def updt_f(service, f):
+    print('updt_f()')
+        
 def access_f(service, f):
-    f_io = dl_f(service, f)
-    open_f(f_io)
+    dl_f(service, f)
+    f['io'].close()
+    open_f(f['io'].name)
+    
+    def handler():
+        updt_f(service, f)
+    watch_f(f['io'].name, handler)
         
 def main():
     """Shows basic usage of the Google Drive API.
