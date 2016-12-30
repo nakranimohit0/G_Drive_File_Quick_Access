@@ -2,7 +2,7 @@
 from __future__ import print_function
 import httplib2, os, io, time
 #import win32file, win32con, win32event
-from apiclient.http import MediaIoBaseDownload
+from apiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 from apiclient import discovery
 from oauth2client import client, tools
@@ -41,8 +41,11 @@ def get_credentials():
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
+        print('before flow')
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+        print('before usr-agent')
         flow.user_agent = APPLICATION_NAME
+        print('after usr-agent')
         if flags:
             credentials = tools.run_flow(flow, store, flags)
         else: # Needed only for compatibility with Python 2.6
@@ -135,6 +138,11 @@ def watch_f(f_loc, handler):
 
 def updt_f(service, f):
     print('updt_f()')
+    '''f['io'] = io.FileIO(f['io'].name, 'rb')
+    media = MediaIoBaseUpload(f['io'], chunksize=1024*1024, resumable=True)
+    rqt = service.files().update(fileId = f['id'], uploadType = 'media', media_body = f['io']) # multipart
+    print('execute()')
+    rqt.execute()'''
         
 def access_f(service, f):
     dl_f(service, f)
