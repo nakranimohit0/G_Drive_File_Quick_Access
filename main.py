@@ -66,15 +66,21 @@ def watch_f(f_loc, handler):
             prnt('bye')
             break
 
-def access_f(f):
+def del_f(f_loc):
+    os.remove(f_loc)
+
+def xs_f(f):
     f.GetContentFile(f['local']['path'])
     open_f(f['local']['path'])
     
-    def handler():
+    def updt_f():
         f.SetContentFile(f['local']['path'])
         prnt('updt')
         f.Upload()
-    watch_f(f['local']['path'], handler)
+    watch_f(f['local']['path'], updt_f)
+    updt_f()
+    f.content.close()
+    del_f(f['local']['path'])
     
 def main():
     usr_dir = usr_dir_init()
@@ -83,7 +89,7 @@ def main():
 
     f = drive.CreateFile({'id': '0Bw0qVz4FT_IQd1p5VnJjZGxXZVU'})
     f['local'] = {'path': os.path.join(usr_dir, f['title'])}
-    access_f(f)
+    xs_f(f)
 
 if __name__ == '__main__':
     main()
